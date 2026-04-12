@@ -1,0 +1,34 @@
+[command]
+name = "reset"
+description = "Snap the agent back to structured governance after drift. The emergency brake."
+
+[inputs]
+# No inputs required. This is a recovery command.
+
+[outputs]
+status = { type = "acknowledgment", description = "Confirmation of re-anchored state with current task and workflow step" }
+
+[prompt]
+template = """
+STOP. You have been asked to reset. Something has gone wrong with your process.
+
+Do not apologize. Do not explain what happened. Execute these steps in order:
+
+1. Re-read `GEMINI.md` completely. Internalize the core principles and guardrails.
+2. Re-read `.agentic/context.md`. State the ports, paths, and hard rules ALOUD in your response.
+3. Re-read `.agentic/blueprint.md`. Confirm the project identity in one sentence.
+4. State what task you are currently working on.
+5. State what step of the workflow you are on:
+   - Planning (have not written code yet)
+   - Implementing (writing code, should have an approved plan)
+   - Verifying (running quality gates)
+   - Escalating (hit failures, should be reporting)
+   - Idle (no active task)
+6. If you were making ad-hoc changes without a plan, acknowledge it and produce a plan NOW
+   using `.agentic/governance/plan-template.md` before writing any more code.
+7. If you were in a debug spiral (3+ fix attempts without a structured diagnosis),
+   stop fixing and produce an escalation report per `.agentic/governance/escalation-protocol.md`.
+
+Do NOT continue any previous work until you have completed all 7 steps
+and the user has acknowledged your reset status.
+"""

@@ -1,0 +1,69 @@
+[command]
+name = "orchestrate"
+description = "Execute the epic ledger milestone-by-milestone using the plan-execute-verify loop."
+
+[inputs]
+milestone = { type = "string", required = false, description = "Specific milestone ID to execute (e.g., 'M3'). If omitted, picks up the next PLANNED milestone." }
+
+[outputs]
+ledger_update = { type = "file", path = ".agentic/architecture/epic-ledger.md", description = "Updated ledger with milestone state transitions" }
+verification = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "Gate results for each completed milestone" }
+
+[prompt]
+template = """
+You are acting as a **Serialized Orchestrator**. Your job is to execute the build
+plan defined in `.agentic/architecture/epic-ledger.md`, one milestone at a time.
+
+## Execution Loop
+
+For each milestone:
+
+### Step 0: Anchor
+Re-read `.agentic/context.md`. Re-read the current milestone's inline context block.
+
+### Step 1: Claim
+Find the next milestone with state `[ ] PLANNED` (or the specific milestone {{milestone}}).
+Update its state to `[>] IN_PROGRESS` in the ledger.
+
+### Step 2: Plan
+Produce a brief implementation plan for this milestone using `.agentic/governance/plan-template.md`.
+For standard milestones, proceed immediately after planning.
+For `[CHECKPOINT]` milestones, update the ledger state to `[?] AWAITING_REVIEW`,
+present the plan for human approval, and do NOT proceed until approved.
+
+### Step 3: Implement
+Write the code. Follow conventions from `.agentic/conventions/`.
+Re-read `.agentic/context.md` before writing each file.
+
+### Step 4: Verify
+Run all mandatory quality gates (G1–G5) from `.agentic/governance/quality-gates.md`.
+Run any applicable conditional gates.
+If a gate fails, follow `.agentic/governance/escalation-protocol.md`.
+
+### Step 5: Update Ledger
+If all gates pass: update milestone state to `[x] VERIFIED`.
+If escalation triggered: update to `[!] BLOCKED` and stop.
+Record files created/modified in the milestone's output section.
+
+### Step 6: Continue or Stop
+If the next milestone is `[CHECKPOINT]`, update its state to `[?] AWAITING_REVIEW`,
+present a summary for human review, and wait for approval before proceeding.
+Otherwise, proceed to Step 7.
+
+### Step 7: Self-Check (Mandatory Before Next Milestone)
+Before proceeding to the next milestone, verify ALL of the following:
+- Did the previous milestone produce a verification report? If not, produce one NOW.
+- Were any gate failures handled via the escalation protocol? If failures were silently skipped, STOP.
+- Re-read `.agentic/context.md` — confirm ports and paths are still correct in your working memory.
+- Re-read the NEXT milestone's inline context block.
+- Confirm you have not modified any files outside the scope of the completed milestone.
+
+Only proceed to Step 0 for the next milestone after all five checks pass.
+If any check fails, stop and report the process violation to the user.
+
+## Rules
+- Never skip Step 0 (context anchoring).
+- Never modify a `[x] VERIFIED` milestone's code unless explicitly asked.
+- If you hit 3 consecutive failures across any gates, stop and escalate — do not continue to the next milestone.
+- Track files created/modified per milestone in the ledger for session continuity.
+"""

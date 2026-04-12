@@ -1,0 +1,27 @@
+[command]
+name = "scaffold-feature"
+description = "Scaffold a new feature for this project following its architecture rules."
+
+[inputs]
+feature = { type = "string", required = true, description = "Name of the feature to scaffold (e.g., 'invoices', 'site-plans')" }
+scope = { type = "string", required = false, default = "full", description = "'full' (all layers), 'backend', or 'frontend'" }
+
+[outputs]
+plan = { type = "implementation-plan", format = ".agentic/governance/plan-template.md", description = "Implementation plan for the scaffold" }
+files = { type = "file-list", description = "List of all files created or modified" }
+
+[prompt]
+template = """
+1. Re-read `.agentic/context.md` — anchor on ports, paths, and hard rules.
+2. Read `.agentic/blueprint.md` — understand this project's stack, architecture rules, and directory layout.
+3. Read the appropriate conventions file from `.agentic/conventions/`.
+4. Based on the blueprint's architecture rules, scaffold a feature called "{{feature}}" with scope "{{scope}}":
+
+   - Follow the project's established module/component patterns exactly.
+   - Create all necessary files (controllers, services, models, pages, types, test stubs).
+   - Register the feature in the project's appropriate entry points.
+
+5. Output an implementation plan FIRST using `.agentic/governance/plan-template.md`.
+6. Wait for approval before creating any files.
+7. After implementation, run `/verify`.
+"""

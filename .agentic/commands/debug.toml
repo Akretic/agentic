@@ -1,0 +1,39 @@
+[command]
+name = "debug"
+description = "Structured debugging workflow: reproduce, isolate, diagnose, propose fix."
+
+[inputs]
+symptom = { type = "string", required = true, description = "Observed problem — error message, unexpected behavior, failing test, etc." }
+location = { type = "string", required = false, description = "File path or module where the issue is suspected, if known" }
+
+[outputs]
+diagnosis = { type = "diagnosis-report", description = "Root cause analysis with evidence" }
+fix_plan = { type = "implementation-plan", format = ".agentic/governance/plan-template.md", description = "Proposed fix following the standard plan template" }
+
+[prompt]
+template = """
+1. Re-read `.agentic/context.md` — anchor on ports, paths, and hard rules.
+2. Read `.agentic/blueprint.md` — understand this project's architecture and known gotchas.
+
+3. **Reproduce:** Understand the symptom "{{symptom}}".
+   - If a location is provided, start there: {{location}}
+   - Otherwise, use the blueprint's architecture rules to locate likely sources.
+   - Attempt to reproduce via build, test, or browser check.
+
+4. **Isolate:** Narrow down the root cause.
+   - Trace the data/control flow from the symptom backward.
+   - Identify the exact file, function, and line where behavior diverges from expected.
+   - Check the blueprint's "Known Gotchas" for related issues.
+
+5. **Diagnose:** Produce a root cause analysis.
+   - What is the root cause?
+   - Why did it happen?
+   - Is this isolated or systemic?
+
+6. **Propose Fix:** Create a fix plan using `.agentic/governance/plan-template.md`.
+   - Do NOT apply the fix automatically.
+   - Include which quality gates apply.
+   - If the fix is risky, flag it for user review.
+
+7. Wait for approval before implementing.
+"""

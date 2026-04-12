@@ -1,0 +1,42 @@
+[command]
+name = "audit"
+description = "Run a comprehensive code quality audit on this project."
+
+[inputs]
+scope = { type = "string", required = false, default = "full", description = "'full' audits the entire project, or a relative directory path to audit a subset" }
+
+[outputs]
+report = { type = "audit-report", description = "Findings categorized by severity (critical, warning, info)" }
+action_items = { type = "list", description = "Prioritized list of recommended fixes" }
+
+[prompt]
+template = """
+1. Re-read `.agentic/context.md` — anchor on ports, paths, and hard rules.
+2. Read `.agentic/blueprint.md` — understand this project's architecture rules and conventions.
+3. Read the appropriate conventions file from `.agentic/conventions/`.
+4. Audit the {{scope}} scope for:
+
+   **Structural Issues:**
+   - Files that violate the project's naming conventions
+   - Missing or misplaced imports
+   - Modules not registered where expected
+
+   **Type Safety:**
+   - Usage of `any` type (or equivalent loose typing)
+   - Missing return types on exported functions
+   - Unsafe type assertions without comments
+
+   **Code Quality:**
+   - Raw console output (should use project's logger)
+   - Dead code or unused imports
+   - Duplicated logic across files
+
+   **Security:**
+   - Hardcoded credentials or API keys
+   - Missing input validation on API endpoints
+   - Permissive CORS or missing auth guards
+
+5. Categorize findings: 🔴 Critical, 🟡 Warning, 🔵 Info
+6. Output a structured report with file locations and recommended fixes.
+7. Do NOT auto-fix — report only.
+"""

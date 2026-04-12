@@ -1,0 +1,23 @@
+[command]
+name = "verify"
+description = "Run the full verification sequence for this project and produce a verification report."
+
+[inputs]
+scope = { type = "string", required = false, default = "full", description = "'full' runs all applicable gates, or specify a gate ID (e.g., 'G1') to run a single gate" }
+
+[outputs]
+report = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "Gate-by-gate results following the standard report template" }
+
+[prompt]
+template = """
+1. Re-read `.agentic/context.md` — anchor on ports, paths, and hard rules.
+2. Read `.agentic/blueprint.md` — load the project's verification sequence.
+3. Run each command in the blueprint's verification sequence, in order.
+4. Run all mandatory quality gates from `.agentic/governance/quality-gates.md` (G1–G5).
+5. Determine which conditional gates (G6–G10) apply based on recent changes.
+6. Run applicable conditional gates.
+7. Produce a verification report using `.agentic/governance/verification-report.md`.
+8. If any gate fails, follow `.agentic/governance/escalation-protocol.md`.
+
+Do NOT fix failures automatically — report them and wait for instruction.
+"""

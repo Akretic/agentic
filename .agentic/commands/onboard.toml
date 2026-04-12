@@ -1,0 +1,138 @@
+[command]
+name = "onboard"
+description = "Automatically explore a project workspace and populate blueprint.md, context.md, and conventions to fully integrate the agentic pipeline."
+
+[inputs]
+# No inputs required. The command discovers everything from the workspace.
+
+[outputs]
+blueprint = { type = "file", path = ".agentic/blueprint.md", description = "Populated with stable facts and working assumptions discovered from the project" }
+context = { type = "file", path = "context.md", description = "Populated with critical constants (ports, paths, hard rules)" }
+conventions = { type = "file-list", description = "Convention files added or confirmed for the project's language(s)" }
+report = { type = "onboarding-report", description = "Summary of what was discovered, what was populated, and what needs manual input" }
+
+[prompt]
+template = """
+You are onboarding the agentic pipeline into this project workspace.
+Your job is to explore the project, discover its identity, and populate the template files.
+
+## Phase 1: Discovery
+
+Scan the workspace systematically. Check for and read these files (if they exist):
+
+**Project identity:**
+- `README.md`, `README`, `docs/` — project description, purpose, stakeholders
+- `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod` — stack, dependencies, scripts
+- `.nvmrc`, `.node-version`, `.python-version`, `.tool-versions` — version constraints
+
+**Architecture:**
+- Directory structure (run `ls` / `Get-ChildItem` recursively, depth-limited)
+- `docker-compose.yml`, `Dockerfile` — services, ports, database config
+- `ecosystem.config.js`, `pm2.json`, `Procfile` — process management
+- `.env.example`, `.env.local.example` — environment variables, ports, credentials
+
+**Conventions:**
+- `.eslintrc*`, `biome.json`, `.prettierrc*` — lint and format config
+- `tsconfig.json` — TypeScript settings (strict mode, paths)
+- `ruff.toml`, `pyproject.toml [tool.ruff]` — Python lint settings
+- `.editorconfig` — indent style, charset
+
+**Existing agent config:**
+- `.github/copilot-instructions.md` — existing agent instructions (preserve useful rules)
+- `.cursor/`, `.windsurf/` — existing agent rules from other platforms
+- `.agents/` — existing workflow definitions
+
+**CI/CD:**
+- `.github/workflows/` — existing CI checks (these inform which quality gates are already automated)
+- `deploy.sh`, `deploy.ps1` — deployment procedures
+
+## Phase 2: Analysis
+
+From what you discovered, determine:
+
+1. **Stack** — primary language(s), framework(s), package manager
+2. **Ports** — all service ports (frontend, backend, database, cache, etc.)
+3. **Paths** — critical file paths the agent needs to know (schema files, config, entry points)
+4. **Architecture rules** — patterns visible in the code structure (module organization, naming)
+5. **Hard rules** — constraints from lint config, tsconfig strict settings, existing agent instructions
+6. **Verification sequence** — build, lint, test, typecheck commands from package.json scripts
+7. **Known gotchas** — non-standard ports, unusual directory structures, pinned dependency versions
+
+## Phase 3: Populate
+
+### 3a. Fill in `.agentic/blueprint.md`
+
+Replace the template placeholders with discovered facts.
+- **Stable Facts:** stack, ports, architecture rules, directory layout, verification sequence
+- **Working Assumptions:** current branch, dev credentials (leave as placeholder if not found),
+  dependencies of note, known gotchas
+- Set "Last verified" date to today
+
+### 3b. Fill in `.agentic/context.md`
+
+Extract ONLY the facts most likely to cause bugs when forgotten:
+- All service ports
+- Non-obvious file paths (schema, config, shared types)
+- Hard rules from lint config (no `any`, no `console.log`, etc.)
+- Keep it under 25 lines. Be ruthless about what makes the cut.
+
+### 3c. Check conventions
+
+- If the project uses TypeScript, confirm `.agentic/conventions/typescript.md` is appropriate.
+  If the project has stricter or different rules, update it.
+- If the project uses Python, create `.agentic/conventions/python.md` from discovered lint/format config.
+- If the project uses Rust, create `.agentic/conventions/rust.md` from discovered clippy/fmt config.
+
+### 3d. Customize GEMINI.md
+
+- Update the OS Rules section if the project targets a different OS than Windows.
+- Update the Verification Commands table with the project's actual commands.
+- Do NOT change the Core Principles, Guardrails, or Context Anchoring sections.
+
+## Phase 4: Report
+
+Produce an onboarding report with this exact structure:
+
+```markdown
+# Onboarding Report
+
+**Project:** [name]
+**Date:** [YYYY-MM-DD]
+**Status:** ✅ COMPLETE / ⚠️ NEEDS MANUAL INPUT
+
+## Discovered
+
+| Category | Value |
+|----------|-------|
+| Stack | [languages, frameworks] |
+| Package Manager | [name + version if found] |
+| Ports | [list all discovered ports] |
+| Services | [list all services] |
+
+## Populated
+
+| File | Status |
+|------|--------|
+| blueprint.md | ✅ Filled / ⚠️ Partial (reason) |
+| context.md | ✅ Filled / ⚠️ Partial (reason) |
+| conventions/ | ✅ Confirmed / 📝 Created [file] |
+| GEMINI.md | ✅ Customized / ℹ️ No changes needed |
+
+## Needs Manual Input
+
+<!-- List anything the agent could NOT discover automatically -->
+- [ ] [item — why it needs manual input]
+
+## Verification
+
+Run `/verify` to confirm the project builds and passes all gates.
+```
+
+## Rules
+- Re-read `.agentic/context.md` before populating it (to understand the template structure).
+- Do NOT invent information. If you can't find a port, say so — don't guess.
+- Do NOT modify governance files (quality-gates.md, escalation-protocol.md, etc.).
+- Do NOT modify command files (commands/*.toml).
+- Mark anything you're uncertain about with `<!-- VERIFY: reason -->` in the populated files.
+- After onboarding, suggest running `/verify` to confirm everything works.
+"""

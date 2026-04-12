@@ -1,0 +1,87 @@
+[command]
+name = "sync"
+description = "Pull the latest framework files from the canonical agentic repo without overwriting project-specific files."
+
+[inputs]
+source = { type = "string", required = false, default = "upstream", description = "'upstream' pulls from the GitHub repo, or an absolute path to a local agentic directory" }
+dry_run = { type = "boolean", required = false, default = false, description = "If true, show what would change without making any modifications" }
+
+[outputs]
+report = { type = "sync-report", description = "List of files updated, skipped (project-specific), and any conflicts detected" }
+
+[prompt]
+template = """
+You are syncing this project's `.agentic/` directory with the latest framework files
+from the canonical source.
+
+## File Classification
+
+### Framework Files (ALWAYS sync — overwrite with latest)
+These are generic pipeline files that should match the canonical version:
+- `.agentic/commands/*.toml` — all command definitions
+- `.agentic/conventions/*.md` — all coding conventions
+- `.agentic/governance/*.md` — all governance templates
+- `.agentic/README.md` — pipeline documentation
+
+### Project-Specific Files (NEVER overwrite)
+These contain project-customized data and must be preserved:
+- `GEMINI.md` — customized agent instructions
+- `.agentic/blueprint.md` — project identity (populated by /onboard)
+- `.agentic/context.md` — project-specific critical constants
+- `.agentic/architecture/*` — project-specific design docs and epic ledger
+
+## Sync Procedure
+
+1. Determine the source:
+   - If `upstream`: read the GitHub repo URL from the project's git config or use the
+     canonical URL defined in `.agentic/sync-source.txt` (if it exists).
+   - If a local path: use that directory directly.
+
+2. For each **framework file** in the source:
+   - If the file exists locally and differs from the source: update it.
+   - If the file exists locally and matches the source: skip (already current).
+   - If the file is new in the source (not present locally): add it.
+
+3. For each **project-specific file**:
+   - SKIP entirely. Do not read, compare, or modify.
+
+4. If `dry_run` is true:
+   - List all changes that WOULD be made, but do not write any files.
+
+5. After sync, check for any structural changes:
+   - New governance templates that GEMINI.md should reference
+   - New commands that the README doesn't list
+   - Flag these as "post-sync review items"
+
+## Sync Report
+
+Produce this exact structure:
+
+```markdown
+# Sync Report
+
+**Source:** [upstream URL or local path]
+**Date:** [YYYY-MM-DD]
+**Mode:** [live / dry-run]
+
+## Updated
+| File | Change |
+|------|--------|
+| [path] | [updated / added / removed] |
+
+## Skipped (Project-Specific)
+| File | Reason |
+|------|--------|
+| blueprint.md | Project-specific — never overwritten |
+| context.md | Project-specific — never overwritten |
+
+## Post-Sync Review
+- [ ] [any items that need manual attention]
+```
+
+## Rules
+- NEVER overwrite project-specific files.
+- If a framework file has been locally modified (diverges from both the old and new upstream),
+  flag it as a conflict and do NOT overwrite. Report it for manual resolution.
+- Always produce the sync report, even if nothing changed.
+"""
