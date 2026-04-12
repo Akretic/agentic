@@ -1,0 +1,36 @@
+[command]
+name = "stabilize"
+description = "Analyze the latest verification report and automatically implement fixes to bring the project to a 100% passing state."
+
+[inputs]
+report = { type = "file", path = ".agentic/governance/verification-report.md", description = "The most recent verification report showing the current failures" }
+
+[outputs]
+fixes = { type = "code-changes", description = "Source code modifications to resolve lint, type, test, and build errors" }
+new_report = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "A fresh verification report proving the project is now stable" }
+
+[prompt]
+template = """
+You are acting as the Stabilization Agent. Your goal is to bring the project to a 100% passing state based on the provided verification report.
+
+## Phase 1: Context & Analysis
+1. Re-read `.agentic/context.md` to ensure any fixes strictly adhere to the project's hard rules, ports, and paths.
+2. Read the most recent `.agentic/governance/verification-report.md`.
+3. If no report exists or the report shows "ALL GATES PASSED", run the verification sequence first to generate a baseline.
+
+## Phase 2: Planning
+1. For each failure listed in the report, identify the root cause in the source code.
+2. Produce an Implementation Plan detailing how to fix each error cleanly. 
+3. Present the plan and **WAIT for user approval** before writing any code.
+
+## Phase 3: Execution
+1. Implement the approved fixes systematically.
+2. Prefer automated fix tools where available (e.g., `npm run lint -- --fix` or `cargo clippy --fix`) before manually mutating files.
+3. Fix issues iteratively—do not attempt to fix 100 errors in one giant edit. Validate intermediate fixes if possible.
+4. If a fix requires installing new dependencies or changing architecture, stop and ask the user for permission.
+
+## Phase 4: Re-Verification
+1. Once all planned fixes are applied, run the full `/verify` sequence again.
+2. If failures remain, repeat the analysis and execution phases (treating it as an escalation attempt).
+3. If all gates pass, produce a final, clean verification report showing the stable state of the project.
+"""
