@@ -31,6 +31,11 @@ Scan the workspace systematically. Check for and read these files (if they exist
 - `ecosystem.config.js`, `pm2.json`, `Procfile` — process management
 - `.env.example`, `.env.local.example` — environment variables, ports, credentials
 
+**Data layer / persistence:**
+- ORM schema files: `prisma/schema.prisma`, `src/entity/**`, `drizzle/schema.ts`, etc.
+- Migration directories: `prisma/migrations/`, `drizzle/`, `src/migrations/`
+- Seed files: `prisma/seed.ts`, `src/db/seed.ts`
+
 **Conventions:**
 - `.eslintrc*`, `biome.json`, `.prettierrc*` — lint and format config
 - `tsconfig.json` — TypeScript settings (strict mode, paths)
@@ -65,6 +70,47 @@ From what you discovered, determine:
 7. **Known gotchas** — non-standard ports, unusual directory structures, pinned dependency versions
 8. **Workspace awareness** — if Rust workspace detected, map workspace members and determine
    if verification commands should use `--workspace` flag
+9. **Domain-boundary mismatches** — scan for data-crossing hazards using the two-layer model below
+
+### Domain-Boundary Scan (Two-Layer Model)
+
+#### Layer 1: Framework-Agnostic Boundary Scan
+
+This runs for ALL backend or full-stack TS/JS/Python projects that use an ORM or persistence layer.
+The goal is to detect mismatches where data contracts between layers are incompatible.
+
+Scan for:
+- **ORM / schema files** — read the schema and map which fields are required vs optional
+- **Create / update payload construction** — find where ORM write calls are built
+- **Helper functions returning nullable values** — scan `src/lib/**`, `src/utils/**`,
+  `src/helpers/**` for functions whose return types include `| null`
+- **Sanitizers, validators, mappers, DTO transformers** — any function that transforms
+  user input before persistence
+- **Assignments into persistence payloads** — where request-layer data crosses into
+  DB-layer write operations
+- **Route / controller / service boundaries** — the seams where data flows from
+  request handling into persistence
+
+Flag any pattern where:
+- A helper returns `T | null` but the ORM field is required (expects `T` or `T | undefined`)
+- A required schema field receives a nullable assignment without coercion
+- A DTO/mapper does not normalize nulls before reaching the persistence layer
+
+#### Layer 2: Framework-Specific Enrichers
+
+These help the agent find the relevant boundary files faster. They do NOT define the scan logic.
+
+| Framework | Route/Controller Paths | Service Layer | Notes |
+|-----------|----------------------|---------------|-------|
+| Next.js App Router | `src/app/api/**/route.ts` | inline or `src/lib/` | API routes colocated with pages |
+| NestJS | `src/modules/**/**.controller.ts` | `**.service.ts` | Follows module pattern |
+| Express / Fastify | `src/routes/**`, `src/controllers/**` | `src/services/**` | Varies per project |
+| Django / FastAPI | `app/views.py`, `app/api/**` | `app/services/**` | Python ORM equivalents |
+
+Use the enricher that matches the discovered framework to prioritize file scanning,
+but always fall back to the framework-agnostic Layer 1 scan for the actual analysis.
+
+Record all findings under "Known Gotchas > Boundary Mismatches" in blueprint.md.
 
 ## Phase 3: Populate
 
@@ -72,8 +118,10 @@ From what you discovered, determine:
 
 Replace the template placeholders with discovered facts.
 - **Stable Facts:** stack, ports, architecture rules, directory layout, verification sequence
+- **Data Layer:** ORM name/version, schema path, route handler pattern, shared helper locations
 - **Working Assumptions:** current branch, dev credentials (leave as placeholder if not found),
   dependencies of note, known gotchas
+- **Known Gotchas > Boundary Mismatches:** any domain-boundary findings from Phase 2 step 9
 - Set "Last verified" date to today
 
 ### 3b. Fill in `.agentic/context.md`
@@ -82,6 +130,8 @@ Extract ONLY the facts most likely to cause bugs when forgotten:
 - All service ports
 - Non-obvious file paths (schema, config, shared types)
 - Hard rules from lint config (no `any`, no `console.log`, etc.)
+- If the domain-boundary scan found a recurring pattern (e.g., nullable helpers → ORM required
+  fields), add ONE hard rule for it. Only if it is a repeated project pattern.
 - Keep it under 25 lines. Be ruthless about what makes the cut.
 
 ### 3c. Check conventions
@@ -97,7 +147,24 @@ Extract ONLY the facts most likely to cause bugs when forgotten:
 - Update the Verification Commands table with the project's actual commands.
 - Do NOT change the Core Principles, Guardrails, or Context Anchoring sections.
 
-## Phase 4: Report
+## Phase 4: Baseline Verification
+
+After populating all files, run the project's verification sequence to establish baseline health.
+This is discovery, not a success/failure gate for onboarding itself.
+
+1. Execute each verification command from the blueprint's verification sequence, in order
+2. Record the outcome of each command
+3. Classify the overall baseline as one of:
+   - ✅ **Green at adoption** — all verification commands pass
+   - ⚠️ **Pre-existing failures at adoption** — list each failure with details
+4. If failures exist, record them under "Known Gotchas > Pre-Existing Failures" in blueprint.md
+   with the tag `[PRE-EXISTING]` so the agent never attributes these to its own work
+
+**Important:** Baseline failures do NOT make onboarding a failure. Onboarding succeeded if it
+discovered and recorded the project's state accurately. Verification failures are pre-existing
+reality that onboarding is now surfacing.
+
+## Phase 5: Report
 
 Produce an onboarding report with this exact structure:
 
@@ -106,7 +173,7 @@ Produce an onboarding report with this exact structure:
 
 **Project:** [name]
 **Date:** [YYYY-MM-DD]
-**Status:** ✅ COMPLETE / ⚠️ NEEDS MANUAL INPUT
+**Onboarding Status:** ✅ COMPLETE / ⚠️ NEEDS MANUAL INPUT
 
 ## Discovered
 
@@ -116,6 +183,16 @@ Produce an onboarding report with this exact structure:
 | Package Manager | [name + version if found] |
 | Ports | [list all discovered ports] |
 | Services | [list all services] |
+| ORM / Schema | [ORM name, schema path] |
+| Route Pattern | [e.g., src/app/api/**/route.ts] |
+
+## Domain-Boundary Findings
+
+<!-- Summarize what the boundary scan discovered. "None found" is a valid outcome. -->
+
+| Finding | Location | Severity |
+|---------|----------|----------|
+| [description] | [file(s)] | ⚠️ / ℹ️ |
 
 ## Populated
 
@@ -126,14 +203,24 @@ Produce an onboarding report with this exact structure:
 | conventions/ | ✅ Confirmed / 📝 Created [file] |
 | GEMINI.md | ✅ Customized / ℹ️ No changes needed |
 
+## Baseline Health
+
+| Command | Status | Notes |
+|---------|--------|-------|
+| [build command] | ✅ PASS / ❌ FAIL | [details if failed] |
+| [lint command] | ✅ PASS / ❌ FAIL | [details if failed] |
+| [test command] | ✅ PASS / ❌ FAIL | [details if failed] |
+
+**Adoption Health:** ✅ Green at adoption / ⚠️ Pre-existing failures detected
+
 ## Needs Manual Input
 
 <!-- List anything the agent could NOT discover automatically -->
 - [ ] [item — why it needs manual input]
 
-## Verification
+## Next Steps
 
-Run `/verify` to confirm the project builds and passes all gates.
+Run `/verify` to perform a full gate-by-gate verification.
 ```
 
 ## Rules
@@ -142,5 +229,6 @@ Run `/verify` to confirm the project builds and passes all gates.
 - Do NOT modify governance files (quality-gates.md, escalation-protocol.md, etc.).
 - Do NOT modify command files (commands/*.toml).
 - Mark anything you're uncertain about with `<!-- VERIFY: reason -->` in the populated files.
-- After onboarding, suggest running `/verify` to confirm everything works.
+- Baseline verification failures are **discovered state**, not onboarding failure.
+- After onboarding, suggest running `/verify` to perform full gate-by-gate verification.
 """

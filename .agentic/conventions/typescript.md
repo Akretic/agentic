@@ -78,6 +78,26 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 - **Mutations:** always invalidate related queries on success.
 - **Paginated responses:** API client handles `{ data, meta }` extraction automatically.
 
+## ORM / Persistence Boundaries
+
+When bridging application helpers to ORM write operations (Prisma `create`, `update`, etc.):
+
+- **Do not assign `T | null` values directly into required ORM fields.**
+  Required fields expect `T` or `T | undefined` — never `null`.
+- **Coerce at the boundary:** Normalize nullable helper outputs before payload construction.
+
+```typescript
+// ✅ Correct: normalize at boundary
+const name = sanitize(input.name) ?? undefined;
+await prisma.user.create({ data: { name } }); // name: string | undefined
+
+// ❌ Wrong: nullable helper assigned directly
+await prisma.user.create({ data: { name: sanitize(input.name) } }); // string | null — type error
+```
+
+- **Prefer explicit mapping functions** for complex payloads to make the boundary visible.
+- This rule applies to all ORMs that treat `null` as "set to NULL" and `undefined` as "skip/use default."
+
 ## Naming
 
 | Thing | Convention | Example |

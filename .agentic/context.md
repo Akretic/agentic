@@ -24,3 +24,4 @@
 <!-- - Use `logger`, never `console.log` -->
 <!-- - No `any` types -->
 <!-- - API prefix: `/v1/` -->
+<!-- - Never assign nullable helper output directly into ORM required fields; coerce null -> undefined at the DB boundary -->

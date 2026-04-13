@@ -34,6 +34,15 @@
 <!-- - No `any` types, no `console.log` -->
 <!-- - API versioned under `/v1/` -->
 
+### Data Layer
+
+| Key | Value |
+|-----|-------|
+| ORM | <!-- e.g., Prisma 6 --> |
+| Schema Path | <!-- e.g., prisma/schema.prisma --> |
+| Route Handlers | <!-- e.g., src/app/api/**/route.ts --> |
+| Shared Helpers | <!-- e.g., src/lib/** --> |
+
 ### Directory Layout
 
 ```
@@ -65,6 +74,16 @@ project/
 ### Known Gotchas
 
 <!-- Recurring issues, workarounds, things that reliably trip up the agent. -->
+
+#### Boundary Mismatches
+
+<!-- ORM ↔ helper nullability mismatches, API ↔ DB schema drift, etc. -->
+<!-- Example: sanitize() returns string | null; Prisma required text fields must never receive null -->
+<!-- Tag pre-existing issues with [PRE-EXISTING] -->
+
+#### Pre-Existing Failures
+
+<!-- Gate failures present at adoption time. Do not attempt to fix unless explicitly asked. -->
 
 ---
 
