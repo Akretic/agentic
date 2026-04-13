@@ -78,6 +78,7 @@ inline context block before each implementation step.
 3. Wait for human approval.
 4. Run `/build` to execute the milestone ledger milestone-by-milestone.
 
+<!-- BEGIN PROJECT: VERIFICATION_COMMANDS -->
 ## Verification Commands
 
 > Override these in `.agentic/blueprint.md` per project. These are defaults.
@@ -87,7 +88,9 @@ inline context block before each implementation step.
 | TypeScript | `pnpm build` | `pnpm lint` | `pnpm test` | `pnpm format` |
 | Rust | `cargo build` | `cargo clippy` | `cargo test` | `cargo fmt` |
 | Python | — | `ruff check` | `pytest` | `ruff format` |
+<!-- END PROJECT: VERIFICATION_COMMANDS -->
 
+<!-- BEGIN PROJECT: OS_RULES -->
 ## OS Rules (Windows)
 
 - Use PowerShell syntax for all commands.
@@ -106,6 +109,7 @@ inline context block before each implementation step.
 - Assume `PAGER=cat` for all commands.
 - Limit `git log` output with `-n`.
 -->
+<!-- END PROJECT: OS_RULES -->
 
 ## Naming Conventions
 

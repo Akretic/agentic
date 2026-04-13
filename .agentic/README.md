@@ -31,6 +31,8 @@ your-project/
     ├── README.md                # Pipeline documentation
     ├── blueprint.md             # Project identity: stable facts + working assumptions
     ├── context.md               # Context anchor: critical facts re-read before every file write
+    ├── version.txt              # Framework version (semver)
+    ├── sync-source.txt          # Canonical repo URL for /sync
     │
     ├── commands/                # Reusable commands with defined inputs/outputs
     │   ├── architect.toml       # Design a greenfield project through conversation (guided)
@@ -42,7 +44,7 @@ your-project/
     │   ├── audit.toml           # Read-only code quality audit (machine-parseable output)
     │   ├── debug.toml           # Structured reproduce → isolate → diagnose → fix
     │   ├── onboard.toml         # Auto-discover project and populate blueprint + context
-    │   ├── sync.toml            # ⚠️ EXPERIMENTAL — Pull framework files from canonical source
+    │   ├── sync.toml            # Pull framework updates from canonical source
     │   └── reset.toml           # Emergency brake — snap agent back to governance
     │
     ├── conventions/             # Language-specific coding standards
@@ -121,6 +123,12 @@ In autonomous mode, the agent must stop and request approval when:
 /audit → /repair (for repairable findings)
 ```
 
+### Update Pipeline from Canonical Source
+
+```
+/sync dry_run=true → review report → /sync
+```
+
 ## Context Anchoring
 
 The biggest failure mode in agentic coding is **context drift** — the agent forgets ports,
@@ -142,4 +150,32 @@ The agent is instructed to re-read it before writing every file. This is cheap (
    - Report what it found and what needs manual input
 4. Review the populated files and fill in any gaps the agent flagged.
 5. Run `/verify` to confirm everything builds and passes gates.
-6. If not on Windows, update the OS rules section in `GEMINI.md` for your platform.
+6. If not on Windows, swap the OS Rules section in `GEMINI.md` (a Linux/macOS variant is included as an HTML comment).
+
+## Syncing Updates
+
+When the canonical pipeline releases a new version, update your project:
+
+```
+# Check current version
+cat .agentic/version.txt
+
+# Preview what would change (no modifications)
+/sync dry_run=true
+
+# Apply the update (pinned to the latest release tag)
+/sync
+
+# Or sync to a specific version
+/sync tag=v1.2.0
+```
+
+The sync command classifies files into three categories:
+
+| Category | Files | Behavior |
+|----------|-------|----------|
+| **Framework** | `commands/`, `conventions/`, `governance/`, `README.md`, `version.txt` | Overwritten with remote |
+| **Merged** | `GEMINI.md` | Framework regions updated, project blocks preserved via markers |
+| **Project-specific** | `blueprint.md`, `context.md`, `architecture/*` | Never touched |
+
+`GEMINI.md` uses named markers (`<!-- BEGIN PROJECT: VERIFICATION_COMMANDS -->`, etc.) to protect project-customized sections during sync. If your `GEMINI.md` predates the marker system (v1.0 installs), the sync will flag it for manual merge.
