@@ -62,11 +62,21 @@ Scan the workspace systematically. Check for and read these files (if they exist
 From what you discovered, determine:
 
 1. **Stack** — primary language(s), framework(s), package manager
-2. **Ports** — all service ports (frontend, backend, database, cache, etc.)
-3. **Paths** — critical file paths the agent needs to know (schema files, config, entry points)
-4. **Architecture rules** — patterns visible in the code structure (module organization, naming)
-5. **Hard rules** — constraints from lint config, tsconfig strict settings, existing agent instructions
-6. **Verification sequence** — build, lint, test, typecheck commands from package.json scripts
+2. **Execution Model** — classify how the project is operated:
+   - `host-native` (app/tooling run directly on machine)
+   - `docker-native` (app/tooling in containers)
+   - `hybrid` (some services in Docker, app/tools local)
+   - `remote-dev` (VM, remote box, dev server)
+   - `orchestrated` (K8s, Nomad, ECS, Tilt, Skaffold)
+   - `task-runner` (make, just, turbo, custom scripts)
+   - `serverless/emulated` (local Lambda, Supabase/Firebase emulators, Vercel CLI)
+   - `monorepo mixed` (packages vary in execution model)
+3. **Execution Specifics** — discover config files. If execution model is docker-native or hybrid, capture app service, db service, exec context, startup command, service DNS rules, bind-mount behavior, and browser URL. Otherwise skip the Docker-specific rules. Also determine if DB migrations/seeding are needed.
+4. **Command Contexts** — determine exact commands for: start environment, run compile, run tests, run migrations, tail logs. Map out whether these run on the host, via `docker compose exec`, `kubectl exec`, etc.
+5. **Paths** — critical file paths the agent needs to know (schema files, config, entry points)
+6. **Architecture rules** — patterns visible in the code structure (module organization, naming)
+7. **Hard rules** — constraints from lint config, tsconfig strict settings, existing agent instructions
+8. **Verification sequence** — build, lint, test, typecheck commands from package.json scripts. **Must capture the exact Exec Context** (e.g., `docker compose exec web pnpm test`, not just `pnpm test`).
 7. **Known gotchas** — non-standard ports, unusual directory structures, pinned dependency versions
 8. **Workspace awareness** — if Rust workspace detected, map workspace members and determine
    if verification commands should use `--workspace` flag
@@ -117,7 +127,7 @@ Record all findings under "Known Gotchas > Boundary Mismatches" in blueprint.md.
 ### 3a. Fill in `.agentic/blueprint.md`
 
 Replace the template placeholders with discovered facts.
-- **Stable Facts:** stack, ports, architecture rules, directory layout, verification sequence
+- **Stable Facts:** stack, Execution Model details (model, app services, ports, etc.), Command Contexts, architecture rules, directory layout, verification sequence
 - **Data Layer:** ORM name/version, schema path, route handler pattern, shared helper locations
 - **Working Assumptions:** current branch, dev credentials (leave as placeholder if not found),
   dependencies of note, known gotchas
@@ -127,9 +137,10 @@ Replace the template placeholders with discovered facts.
 ### 3b. Fill in `.agentic/context.md`
 
 Extract ONLY the facts most likely to cause bugs when forgotten:
-- All service ports
+- All service ports (explicitly mentioning host vs container)
 - Non-obvious file paths (schema, config, shared types)
 - Hard rules from lint config (no `any`, no `console.log`, etc.)
+- **Execution Model Rule**: Create a precise rule for how commands must be run. For docker-native/hybrid, inject these high-impact lines: "Use `docker compose exec <app_service> ...` for app commands in this repo. Inside containers, use service DNS such as `db:5432`; do not use host loopback unless the blueprint marks a host-side command path." Adapt this rule appropriately based on the detected Execution Model.
 - If the domain-boundary scan found a recurring pattern (e.g., nullable helpers → ORM required
   fields), add ONE hard rule for it. Only if it is a repeated project pattern.
 - Keep it under 25 lines. Be ruthless about what makes the cut.
@@ -185,6 +196,15 @@ Produce an onboarding report with this exact structure:
 | Services | [list all services] |
 | ORM / Schema | [ORM name, schema path] |
 | Route Pattern | [e.g., src/app/api/**/route.ts] |
+
+## Execution Context Summary
+
+| Action | Context/Command |
+|--------|-----------------|
+| Runtime model | [e.g., docker-native] |
+| Start with | [e.g., docker compose up -d web db] |
+| Run verification in | [e.g., web container] |
+| Browser check URL | [e.g., http://localhost:3000] |
 
 ## Domain-Boundary Findings
 

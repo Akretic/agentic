@@ -58,7 +58,7 @@ Ports, stack, architecture rules, directory layout — all concrete.
 ### 2. `.agentic/architecture/design-doc.md`
 Write a concise system design covering:
 - System overview (1 paragraph)
-- Tech stack with rationale
+- Tech stack with rationale. (If the execution model involves Docker and development requires bind mounts, watch mode, or container-specific overrides, recommend a dedicated dev-specific Compose configuration rather than mixing dev quirks into the base Compose file.)
 - Data model (entities, relationships, key fields)
 - API surface (major endpoints grouped by domain)
 - Auth strategy

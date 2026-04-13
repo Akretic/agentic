@@ -1,4 +1,4 @@
-# Agentic Coding Pipeline v1.1
+# Agentic Coding Pipeline v1.2.1
 
 A self-contained template for governed, autonomous AI-assisted development with Google Antigravity.
 Copy this structure into any project workspace to get instant project intelligence,
@@ -167,7 +167,7 @@ cat .agentic/version.txt
 /sync
 
 # Or sync to a specific version
-/sync tag=v1.2.0
+/sync tag=v1.2.1
 ```
 
 The sync command classifies files into three categories:

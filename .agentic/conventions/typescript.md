@@ -117,3 +117,4 @@ await prisma.user.create({ data: { name: sanitize(input.name) } }); // string | 
 - Mock API client, not HTTP layer.
 - Wrap components in `QueryClientProvider` with `retry: false`.
 - Test accessibility: use `getByRole`, `getByLabelText` over `getByTestId`.
+- **Runtime Context:** For Docker-native or hybrid projects, test/runtime setup must tolerate existing healthy servers and must resolve DB connection context correctly for host vs container execution.

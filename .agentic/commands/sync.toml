@@ -1,214 +1,145 @@
 [command]
 name = "sync"
-description = "Pull the latest framework files from the canonical agentic repo. Uses GitHub API for remote access and marker-based merge for GEMINI.md."
+description = "Pull the latest framework files from the canonical agentic repo and update the local .agentic/ directory."
 
 [inputs]
-source = { type = "string", required = false, default = "remote", description = "'remote' syncs from the repo in sync-source.txt (pinned to a release tag), or an absolute local path to a canonical agentic directory" }
-dry_run = { type = "boolean", required = false, default = false, description = "If true, show what would change without making any modifications" }
-force = { type = "boolean", required = false, default = false, description = "If true, sync even when local and remote versions match" }
-tag = { type = "string", required = false, description = "Specific release tag to sync to (e.g., 'v1.2.0'). If omitted, fetches the latest release tag from GitHub." }
+source = { type = "string", required = false, default = "remote", description = "'remote' syncs from the repo in sync-source.txt, or an absolute local path to a canonical agentic directory" }
+dry_run = { type = "boolean", required = false, default = false, description = "If true, show what would change without writing anything" }
+force = { type = "boolean", required = false, default = false, description = "If true, sync even when versions match" }
+tag = { type = "string", required = false, description = "Specific release tag (e.g., 'v1.2.0'). If omitted, uses the latest tag." }
 
 [outputs]
-report = { type = "sync-report", description = "List of files updated, skipped, merged, and any conflicts detected" }
+report = { type = "sync-report", description = "Summary of files updated" }
 
 [prompt]
 template = """
-You are syncing this project's `.agentic/` directory and `GEMINI.md` with the latest
-framework release from the canonical source.
+You are syncing this project's `.agentic/` directory with the latest framework release.
+Keep this fast — clone, copy, report. Do not narrate intermediate steps.
 
-## File Classification
+## What Gets Synced
 
-### Category 1: Framework Files (OVERWRITE with remote)
-These are generic pipeline files that should match the canonical version:
-- `.agentic/commands/*.toml` — all command definitions
-- `.agentic/conventions/*.md` — all coding conventions
-- `.agentic/governance/*.md` — all governance templates
-- `.agentic/README.md` — pipeline documentation
-- `.agentic/version.txt` — framework version
-- `.gitattributes` — line ending normalization
-
-### Category 2: Merged File (MARKER-BASED merge)
-`GEMINI.md` is project-specific EXCEPT for framework-managed regions outside protected markers.
-
-**Protected project blocks** (content inside these markers is NEVER overwritten):
-- `<!-- BEGIN PROJECT: VERIFICATION_COMMANDS -->` ... `<!-- END PROJECT: VERIFICATION_COMMANDS -->`
-- `<!-- BEGIN PROJECT: OS_RULES -->` ... `<!-- END PROJECT: OS_RULES -->`
-
-**Framework regions** (everything OUTSIDE protected markers) are replaced with the remote version.
-
-Only these two named blocks are recognized. Do not invent new block names.
-Do not attempt to merge content within protected blocks.
-
-If the local `GEMINI.md` has no markers (legacy install):
-- Flag as a **manual merge conflict** in the sync report
-- Do NOT overwrite
-- Add to Post-Sync Review: "GEMINI.md has no sync markers — manual merge required"
-
-If the remote version introduces **structural changes to protected sections**
-(e.g., new columns in the Verification Commands table):
-- Flag as a **structural conflict** in the sync report
-- Add to Post-Sync Review with the specific structural difference
-- Do NOT modify the protected block — the user decides
-
-### Category 3: Project-Specific Files (NEVER touch)
-These contain project-customized data and must be preserved:
-- `.agentic/blueprint.md` — project identity (populated by /onboard)
-- `.agentic/context.md` — project-specific critical constants
-- `.agentic/sync-source.txt` — may point to a fork or internal mirror
-- `.agentic/architecture/*` — project-specific design docs and milestone ledger
-
-## Sync Procedure
-
-### Phase 1: Source Resolution
-
-1. If `source` is "remote":
-   a. Read `.agentic/sync-source.txt` for the repo URL (e.g., `https://github.com/Akretic/agentic`)
-   b. If no `sync-source.txt` exists, stop and ask the user for the repo URL
-   c. Parse owner and repo from the URL: `https://github.com/{owner}/{repo}`
-   d. Determine the target tag:
-      - If `tag` input is provided: use that tag (e.g., `v1.2.0`)
-      - If no tag provided: fetch the latest release tag from:
-        `https://api.github.com/repos/{owner}/{repo}/releases/latest`
-        Use the `tag_name` field from the response
-   e. Set the raw content base URL: `https://raw.githubusercontent.com/{owner}/{repo}/{tag}/`
-   f. Set the API base URL: `https://api.github.com/repos/{owner}/{repo}/contents/`
-      with query parameter `?ref={tag}`
-
-2. If `source` is a local path:
-   a. Verify the path exists and contains `.agentic/version.txt`
-   b. Use that directory as the source directly (read files from filesystem)
-   c. Skip tag resolution — the local directory IS the version
-
-### Phase 2: Version Check
-
-1. Read local `.agentic/version.txt` (if missing, treat as `0.0.0`)
-2. Read remote `.agentic/version.txt`
-3. Parse both as semver: `MAJOR.MINOR.PATCH`
-4. Compare:
-   - If equal and `force` is false: report "Already at version X.Y.Z — no sync needed" and stop
-   - If equal and `force` is true: continue with sync
-   - If remote is newer: continue with sync
-   - If local is newer than remote tag: warn "Local version (X.Y.Z) is ahead of remote (A.B.C)"
-5. Display: `Sync: local X.Y.Z → remote A.B.C (tag: {tag})`
-
-### Phase 3: File Discovery (Remote)
-
-Use the GitHub Contents API to list files in these remote directories:
-- `https://api.github.com/repos/{owner}/{repo}/contents/.agentic/commands?ref={tag}`
-- `https://api.github.com/repos/{owner}/{repo}/contents/.agentic/conventions?ref={tag}`
-- `https://api.github.com/repos/{owner}/{repo}/contents/.agentic/governance?ref={tag}`
-
-Also fetch these individual files:
+**OVERWRITE from remote (framework files):**
+- `.agentic/commands/*.toml`
+- `.agentic/conventions/*.md`
+- `.agentic/governance/*.md`
 - `.agentic/README.md`
 - `.agentic/version.txt`
-- `.agentic/sync-source.txt`
 - `.gitattributes`
-- `GEMINI.md`
 
-Build a manifest of all remote framework files with their `download_url` values.
+**MERGE (marker-based):**
+- `GEMINI.md` — framework regions updated, protected project blocks preserved
 
-### Phase 4: Framework File Sync
+**NEVER TOUCH (project-specific):**
+- `.agentic/blueprint.md`
+- `.agentic/context.md`
+- `.agentic/sync-source.txt`
+- `.agentic/architecture/*`
 
-For each framework file in the remote manifest:
+## Procedure
 
-1. Fetch remote content via `download_url` (or read from local source path)
-2. Read local file content (if it exists)
-3. Compare:
-   - If files are identical: skip (mark as "current")
-   - If local differs from remote: queue for **update**
-   - If remote file is new (not present locally): queue for **add**
-4. Check for local files NOT in the remote manifest:
-   - If a local `.agentic/commands/*.toml` file does not exist in the remote:
-     queue for **removal** and flag in Post-Sync Review (do NOT auto-delete)
+### Step 1: Resolve Source
 
-### Phase 5: GEMINI.md Merge
+If `source` is "remote":
+1. Read `.agentic/sync-source.txt` for the repo URL
+2. Read `.agentic/version.txt` for the local version (default `0.0.0` if missing)
+3. Determine the target tag:
+   - If `tag` input provided: use it directly
+   - Otherwise: run `git ls-remote --tags {repo_url}` and pick the highest semver tag
+     (parse lines matching `refs/tags/vX.Y.Z`, sort by semver, take the highest)
+4. Compare local version to the remote tag version:
+   - Same and `force` is false → print "Already at vX.Y.Z" and stop
+   - Otherwise → continue
 
-1. Fetch remote `GEMINI.md`
-2. Read local `GEMINI.md`
-3. Check for protected block markers in local file:
-   - Search for `<!-- BEGIN PROJECT: VERIFICATION_COMMANDS -->` and `<!-- END PROJECT: VERIFICATION_COMMANDS -->`
-   - Search for `<!-- BEGIN PROJECT: OS_RULES -->` and `<!-- END PROJECT: OS_RULES -->`
+If `source` is a local path:
+1. Verify the path contains `.agentic/version.txt`
+2. Use that directory as the source — skip git clone, copy directly
 
-4. If markers are MISSING in local file:
-   - Flag as manual merge conflict
-   - Add to Post-Sync Review
-   - Do NOT modify `GEMINI.md`
-   - STOP processing GEMINI.md
+### Step 2: Clone & Copy
 
-5. If markers are present:
-   a. Extract the content of each protected block from the LOCAL file
-      (everything between BEGIN and END markers, inclusive of the markers themselves)
-   b. Read the REMOTE `GEMINI.md`
-   c. Replace each protected block in the REMOTE file with the LOCAL protected block content
-   d. The result is: remote framework text + local project customizations
-   e. Queue the merged result for writing
+1. Clone the repo at the target tag (shallow, single-branch):
+   ```powershell
+   git clone --depth 1 --branch {tag} {repo_url} .agentic-sync-tmp
+   ```
+   Run this in the project root directory.
 
-6. Structural conflict detection:
-   - After merging, check if the remote's protected block templates differ structurally
-     from the local blocks (e.g., different number of table columns, new subsections)
-   - If structural differences are detected: flag in Post-Sync Review
-   - Still apply the merge (local blocks preserved), but warn the user
+2. If `dry_run` is false, copy framework files from the clone to the local workspace:
 
-### Phase 6: Apply or Report
+   **Copy these directories (overwrite all files in each):**
+   - `.agentic-sync-tmp/.agentic/commands/*` → `.agentic/commands/`
+   - `.agentic-sync-tmp/.agentic/conventions/*` → `.agentic/conventions/`
+   - `.agentic-sync-tmp/.agentic/governance/*` → `.agentic/governance/`
 
-If `dry_run` is true:
-- Report everything that WOULD change
-- Write nothing
+   **Copy these individual files:**
+   - `.agentic-sync-tmp/.agentic/README.md` → `.agentic/README.md`
+   - `.agentic-sync-tmp/.agentic/version.txt` → `.agentic/version.txt`
+   - `.agentic-sync-tmp/.gitattributes` → `.gitattributes`
 
-If `dry_run` is false:
-- Write all queued updates and additions
-- Write the merged GEMINI.md (if merge succeeded)
-- Do NOT delete any files automatically — only flag removals in the report
+   Use PowerShell `Copy-Item -Force` for each.
 
-### Phase 7: Sync Report
+3. If `dry_run` is true, compare the remote and local files and list what differs without writing.
 
-Produce this structure:
+### Step 3: GEMINI.md Merge
+
+1. Read local `GEMINI.md` and remote `.agentic-sync-tmp/GEMINI.md`
+2. Find protected blocks in local file using these markers:
+   - `<!-- BEGIN PROJECT: VERIFICATION_COMMANDS -->` … `<!-- END PROJECT: VERIFICATION_COMMANDS -->`
+   - `<!-- BEGIN PROJECT: OS_RULES -->` … `<!-- END PROJECT: OS_RULES -->`
+
+3. If local has NO markers: flag for manual merge in the report. Do NOT overwrite.
+4. If local HAS markers:
+   a. Extract each protected block from LOCAL (markers inclusive)
+   b. In the REMOTE GEMINI.md, find the same marker pairs
+   c. Replace the remote's protected blocks with the local ones
+   d. Write the merged result as the new `GEMINI.md`
+
+### Step 4: Flag Local-Only Files
+
+Compare local `.agentic/commands/`, `conventions/`, `governance/` against the remote.
+If any local file has no remote counterpart, note it in the report (do NOT delete it).
+
+### Step 5: Cleanup
+
+Remove the temp clone directory:
+```powershell
+Remove-Item -Recurse -Force .agentic-sync-tmp
+```
+
+### Step 6: Report
+
+Print a concise sync report:
 
 ```markdown
-# Sync Report
+# Sync Complete
 
-**Source:** [repo URL or local path]
-**Tag:** [release tag, e.g., v1.2.0]
-**Date:** [YYYY-MM-DD]
-**Mode:** [live / dry-run]
-**Version:** [local version] → [remote version]
+**Version:** X.Y.Z → A.B.C (tag: vA.B.C)
+**Mode:** live / dry-run
 
-## Updated
-| File | Change |
+## Updated Files
+| File | Status |
 |------|--------|
-| [path] | updated / added |
+| commands/onboard.toml | updated |
+| conventions/typescript.md | updated |
+| ... | ... |
 
-## Unchanged
-| File |
-|------|
-| [path] |
-
-## GEMINI.md Merge
-| Block | Status |
-|-------|--------|
+## GEMINI.md
+| Region | Status |
+|--------|--------|
 | VERIFICATION_COMMANDS | preserved (local) |
 | OS_RULES | preserved (local) |
 | Framework regions | updated (remote) |
 
-## Skipped (Project-Specific)
-| File | Reason |
-|------|--------|
-| blueprint.md | Project-specific — never overwritten |
-| context.md | Project-specific — never overwritten |
-| architecture/* | Project-specific — never overwritten |
+## Local-Only Files (not in remote)
+- commands/orchestrate.toml — review if still needed
 
-## Post-Sync Review
-- [ ] [any items that need manual attention]
-- [ ] [structural conflicts in GEMINI.md protected blocks]
-- [ ] [local files not found in remote — potential removal candidates]
+## Skipped (project-specific)
+blueprint.md, context.md, sync-source.txt, architecture/*
 ```
 
 ## Rules
-- NEVER overwrite project-specific files (Category 3).
-- NEVER modify content inside protected project blocks in GEMINI.md.
-- NEVER auto-delete files — only flag removals for manual review.
-- If `GEMINI.md` has no markers, do NOT overwrite — flag for manual merge.
-- Always produce the sync report, even if nothing changed.
-- Always pin to a release tag. Do not sync from an untagged branch tip.
-- If the GitHub API is unreachable or returns errors, stop and report the error cleanly.
+- Do NOT narrate each file comparison. Just do it and report the result.
+- Do NOT modify project-specific files.
+- Do NOT auto-delete local-only files — flag them only.
+- Do NOT modify content inside GEMINI.md protected blocks.
+- If git clone fails, report the error and stop.
+- Always clean up the temp directory, even on failure.
 """

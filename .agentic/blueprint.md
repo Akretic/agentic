@@ -21,11 +21,28 @@
 | Package Manager | <!-- e.g., pnpm 9 / uv / cargo --> |
 | Language | <!-- e.g., TypeScript 5.x (strict) / Python 3.12 / Rust 1.78 --> |
 
-### Ports & Services
+### Execution & Runtime
 
-| Service | Port | Notes |
-|---------|------|-------|
-| <!-- service name --> | <!-- port --> | <!-- notes --> |
+| Key | Value |
+|-----|-------|
+| Execution Model | <!-- host-native, docker-native, hybrid, remote-dev, orchestrated, task-runner, serverless/emulated, or monorepo mixed --> |
+| Config File(s) | <!-- e.g., docker-compose.yml, Tiltfile, wrangler.toml --> |
+| App Service | <!-- e.g., web, api, frontend --> |
+| Dependency Services | <!-- e.g., db, redis, worker --> |
+| Port Mappings | <!-- e.g., Host 3000 -> Container 3000, Postgres 5433 -> 5432 --> |
+| Exec Context | <!-- e.g., docker compose exec web, kubectl exec, or host --> |
+| Envs / Profiles | <!-- Required profiles or env files for startup --> |
+| Browser URL | <!-- e.g., http://localhost:3000 --> |
+
+### Command Context
+
+| Action | Command |
+|--------|---------|
+| Start Environment | <!-- e.g., docker compose up -d --> |
+| Run Migrations/Seed | <!-- e.g., docker compose exec web pnpm prisma migrate dev --> |
+| Run Compile | <!-- e.g., docker compose exec web pnpm build --> |
+| Run Tests | <!-- e.g., docker compose exec web pnpm test --> |
+| Tail Logs | <!-- e.g., docker compose logs -f web --> |
 
 ### Architecture Rules
 
@@ -91,6 +108,7 @@ project/
 
 > Ordered list of commands to confirm this project is healthy.
 > These are referenced by the `/verify` command and quality gates.
+> **Must use the correct Exec Context** (e.g., `docker compose exec...` not just host-local commands unless host-native).
 
 1. <!-- `command` — what it checks -->
 2. <!-- `command` — what it checks -->
