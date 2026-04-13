@@ -1,18 +1,35 @@
 [command]
-name = "orchestrate"
-description = "Execute the epic ledger milestone-by-milestone using the plan-execute-verify loop."
+name = "build"
+description = "Execute the milestone ledger milestone-by-milestone using the plan-execute-verify loop. Runs in autonomous mode after architecture approval."
 
 [inputs]
 milestone = { type = "string", required = false, description = "Specific milestone ID to execute (e.g., 'M3'). If omitted, picks up the next PLANNED milestone." }
 
 [outputs]
-ledger_update = { type = "file", path = ".agentic/architecture/epic-ledger.md", description = "Updated ledger with milestone state transitions" }
+ledger_update = { type = "file", path = ".agentic/architecture/milestone-ledger.md", description = "Updated ledger with milestone state transitions" }
 verification = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "Gate results for each completed milestone" }
 
 [prompt]
 template = """
-You are acting as a **Serialized Orchestrator**. Your job is to execute the build
-plan defined in `.agentic/architecture/epic-ledger.md`, one milestone at a time.
+You are acting as a **Serialized Build Engine**. Your job is to execute the build
+plan defined in `.agentic/architecture/milestone-ledger.md`, one milestone at a time.
+
+**Execution mode: autonomous.** You do not need human approval for each implementation
+step. You plan, implement, verify, and continue unless a hard-stop trigger fires.
+
+## Hard-Stop Triggers
+
+Stop and request human approval when ANY of these apply:
+- Architecture rules would change
+- A new subsystem or major boundary is introduced
+- Dependency installation or toolchain changes are required
+- Secrets, auth, permissions, or security-sensitive work is involved
+- Database migrations or destructive data operations are needed
+- Destructive file operations (bulk delete, rename critical paths)
+- Repeated gate failure triggers the escalation protocol
+- The current milestone is marked `[CHECKPOINT]`
+
+When a hard-stop fires, state WHICH trigger applies and wait for approval.
 
 ## Execution Loop
 
@@ -27,9 +44,9 @@ Update its state to `[>] IN_PROGRESS` in the ledger.
 
 ### Step 2: Plan
 Produce a brief implementation plan for this milestone using `.agentic/governance/plan-template.md`.
-For standard milestones, proceed immediately after planning.
 For `[CHECKPOINT]` milestones, update the ledger state to `[?] AWAITING_REVIEW`,
 present the plan for human approval, and do NOT proceed until approved.
+For all other milestones, proceed immediately after planning.
 
 ### Step 3: Implement
 Write the code. Follow conventions from `.agentic/conventions/`.
@@ -64,6 +81,6 @@ If any check fails, stop and report the process violation to the user.
 ## Rules
 - Never skip Step 0 (context anchoring).
 - Never modify a `[x] VERIFIED` milestone's code unless explicitly asked.
-- If you hit 3 consecutive failures across any gates, stop and escalate — do not continue to the next milestone.
+- If the same blocking gate fails 3 consecutive times for the current milestone, stop and escalate — do not continue to the next milestone.
 - Track files created/modified per milestone in the ledger for session continuity.
 """

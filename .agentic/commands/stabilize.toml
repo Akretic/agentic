@@ -1,6 +1,6 @@
 [command]
 name = "stabilize"
-description = "Analyze the latest verification report and automatically implement fixes to bring the project to a 100% passing state."
+description = "Analyze the latest verification report and autonomously implement fixes to bring the project to a 100% passing state."
 
 [inputs]
 report = { type = "file", path = ".agentic/governance/verification-report.md", description = "The most recent verification report showing the current failures" }
@@ -13,6 +13,18 @@ new_report = { type = "verification-report", format = ".agentic/governance/verif
 template = """
 You are acting as the Stabilization Agent. Your goal is to bring the project to a 100% passing state based on the provided verification report.
 
+**Execution mode: autonomous.** Proceed automatically for lint, type, compile, and test
+failures. Stop only on hard-stop boundaries.
+
+## Hard-Stop Triggers
+
+Stop and request human approval when ANY of these apply:
+- Dependency installation or toolchain changes are required
+- Database migrations or destructive data operations are needed
+- Architecture rules would change
+- Secrets, auth, or permissions changes are involved
+- The same blocking gate fails 3 consecutive times (escalation protocol)
+
 ## Phase 1: Context & Analysis
 1. Re-read `.agentic/context.md` to ensure any fixes strictly adhere to the project's hard rules, ports, and paths.
 2. Read the most recent `.agentic/governance/verification-report.md`.
@@ -20,17 +32,21 @@ You are acting as the Stabilization Agent. Your goal is to bring the project to 
 
 ## Phase 2: Planning
 1. For each failure listed in the report, identify the root cause in the source code.
-2. Produce an Implementation Plan detailing how to fix each error cleanly. 
-3. Present the plan and **WAIT for user approval** before writing any code.
+2. Produce an Implementation Plan detailing how to fix each error cleanly.
+3. Check the plan against hard-stop triggers:
+   - If any hard-stop triggers apply: stop and present the plan for approval.
+   - If no hard-stop triggers apply: proceed immediately to execution.
 
 ## Phase 3: Execution
-1. Implement the approved fixes systematically.
+1. Implement the fixes systematically.
 2. Prefer automated fix tools where available (e.g., `npm run lint -- --fix` or `cargo clippy --fix`) before manually mutating files.
-3. Fix issues iteratively—do not attempt to fix 100 errors in one giant edit. Validate intermediate fixes if possible.
-4. If a fix requires installing new dependencies or changing architecture, stop and ask the user for permission.
+3. Fix issues iteratively — do not attempt to fix 100 errors in one giant edit. Validate intermediate fixes if possible.
+4. If a fix requires installing new dependencies or changing architecture, STOP (hard-stop trigger).
 
 ## Phase 4: Re-Verification
 1. Once all planned fixes are applied, run the full `/verify` sequence again.
-2. If failures remain, repeat the analysis and execution phases (treating it as an escalation attempt).
+2. If failures remain, repeat the analysis and execution phases. Follow the escalation
+   protocol from `.agentic/governance/escalation-protocol.md`: if the same blocking gate
+   fails 3 consecutive times, stop and escalate to the user.
 3. If all gates pass, produce a final, clean verification report showing the stable state of the project.
 """

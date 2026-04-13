@@ -1,9 +1,9 @@
 [command]
 name = "verify"
-description = "Run the full verification sequence for this project and produce a verification report."
+description = "Run the verification sequence for this project and produce a verification report. Supports full and scoped modes."
 
 [inputs]
-scope = { type = "string", required = false, default = "full", description = "'full' runs all applicable gates, or specify a gate ID (e.g., 'G1') to run a single gate" }
+scope = { type = "string", required = false, default = "full", description = "'full' runs all applicable gates against the entire project. 'scoped' runs gates only against changed files (determined by git diff, then agent-tracked file list as fallback, expanded to package/crate boundaries as needed). Or specify a gate ID (e.g., 'G1') to run a single gate." }
 
 [outputs]
 report = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "Gate-by-gate results following the standard report template" }
@@ -12,12 +12,26 @@ report = { type = "verification-report", format = ".agentic/governance/verificat
 template = """
 1. Re-read `.agentic/context.md` — anchor on ports, paths, and hard rules.
 2. Read `.agentic/blueprint.md` — load the project's verification sequence.
-3. Run each command in the blueprint's verification sequence, in order.
-4. Run all mandatory quality gates from `.agentic/governance/quality-gates.md` (G1–G5).
-5. Determine which conditional gates (G6–G10) apply based on recent changes.
-6. Run applicable conditional gates.
-7. Produce a verification report using `.agentic/governance/verification-report.md`.
-8. If any gate fails, follow `.agentic/governance/escalation-protocol.md`.
+
+3. **Determine scope:**
+   - If `scope` is "full": run against the entire project.
+   - If `scope` is "scoped": determine affected files using this priority order:
+     1. `git diff --name-only` against the last clean state
+     2. Agent-maintained list of modified files (fallback)
+     3. Expand scope to the containing package or crate when needed
+   - If `scope` is a gate ID (e.g., "G1"): run only that specific gate.
+
+4. Run each command in the blueprint's verification sequence, in order, respecting scope.
+5. Run all mandatory quality gates from `.agentic/governance/quality-gates.md` (G1–G5).
+6. Determine which conditional gates (G6–G10) apply based on recent changes.
+7. Run applicable conditional gates.
+8. Produce a verification report using `.agentic/governance/verification-report.md`.
+   Include the scope mode and affected paths in the report header.
+9. If any gate fails, follow `.agentic/governance/escalation-protocol.md`.
 
 Do NOT fix failures automatically — report them and wait for instruction.
+
+## When to Use Each Scope
+- **full**: onboarding, milestone completion, releases, stabilization end-state
+- **scoped**: after small edits, repairs, single-file changes, mid-milestone checks
 """

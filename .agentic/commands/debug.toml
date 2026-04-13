@@ -1,10 +1,11 @@
 [command]
 name = "debug"
-description = "Structured debugging workflow: reproduce, isolate, diagnose, propose fix."
+description = "Structured debugging workflow: reproduce, isolate, diagnose, propose fix. Optionally apply the fix autonomously."
 
 [inputs]
 symptom = { type = "string", required = true, description = "Observed problem — error message, unexpected behavior, failing test, etc." }
 location = { type = "string", required = false, description = "File path or module where the issue is suspected, if known" }
+apply = { type = "boolean", required = false, default = false, description = "If true, proceed directly to repair after diagnosis if the fix is low-risk" }
 
 [outputs]
 diagnosis = { type = "diagnosis-report", description = "Root cause analysis with evidence" }
@@ -31,9 +32,14 @@ template = """
    - Is this isolated or systemic?
 
 6. **Propose Fix:** Create a fix plan using `.agentic/governance/plan-template.md`.
-   - Do NOT apply the fix automatically.
    - Include which quality gates apply.
    - If the fix is risky, flag it for user review.
 
-7. Wait for approval before implementing.
+7. **Apply or Wait:**
+   - If `apply` is {{apply}}:
+     - If `true` AND no hard-stop triggers apply (architecture changes, dependency installation,
+       secrets/auth work, migrations, destructive operations): implement the fix immediately,
+       run scoped verification, and produce a verification report.
+     - If `true` BUT a hard-stop trigger applies: stop and present the plan for approval.
+     - If `false`: present the plan and wait for approval before implementing.
 """

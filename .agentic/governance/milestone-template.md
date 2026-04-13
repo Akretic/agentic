@@ -1,7 +1,7 @@
-# Epic Ledger Template
+# Milestone Ledger Template
 
 > Master build plan produced by the `/architect` command.
-> Executed by the `/orchestrate` command.
+> Executed by the `/build` command.
 > Each milestone is a self-contained vertical slice with its own context block.
 
 ---
@@ -34,12 +34,12 @@
 - [ ] <!-- specific, implementable task -->
 
 ### Files Created/Modified
-<!-- Filled in by the orchestrator after verification -->
+<!-- Filled in by the build engine after verification -->
 <!-- - path/to/file.ts (created) -->
 <!-- - path/to/other.ts (modified) -->
 
 ### Verification Notes
-<!-- Filled in by the orchestrator after gate execution -->
+<!-- Filled in by the build engine after gate execution -->
 <!-- Gate results, any warnings, fixes applied -->
 
 ---

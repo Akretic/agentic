@@ -7,7 +7,7 @@ description = "Automatically explore a project workspace and populate blueprint.
 
 [outputs]
 blueprint = { type = "file", path = ".agentic/blueprint.md", description = "Populated with stable facts and working assumptions discovered from the project" }
-context = { type = "file", path = "context.md", description = "Populated with critical constants (ports, paths, hard rules)" }
+context = { type = "file", path = ".agentic/context.md", description = "Populated with critical constants (ports, paths, hard rules)" }
 conventions = { type = "file-list", description = "Convention files added or confirmed for the project's language(s)" }
 report = { type = "onboarding-report", description = "Summary of what was discovered, what was populated, and what needs manual input" }
 
@@ -26,7 +26,7 @@ Scan the workspace systematically. Check for and read these files (if they exist
 - `.nvmrc`, `.node-version`, `.python-version`, `.tool-versions` — version constraints
 
 **Architecture:**
-- Directory structure (run `ls` / `Get-ChildItem` recursively, depth-limited)
+- Directory structure (list recursively, depth-limited)
 - `docker-compose.yml`, `Dockerfile` — services, ports, database config
 - `ecosystem.config.js`, `pm2.json`, `Procfile` — process management
 - `.env.example`, `.env.local.example` — environment variables, ports, credentials
@@ -35,6 +35,12 @@ Scan the workspace systematically. Check for and read these files (if they exist
 - `.eslintrc*`, `biome.json`, `.prettierrc*` — lint and format config
 - `tsconfig.json` — TypeScript settings (strict mode, paths)
 - `ruff.toml`, `pyproject.toml [tool.ruff]` — Python lint settings
+- `rust-toolchain.toml` — Rust toolchain version and components
+- `rustfmt.toml` — Rust format settings
+- `clippy.toml` — Rust lint configuration
+- `.cargo/config.toml` — Cargo build settings, registries, target config
+- `Cargo.toml [workspace]` — workspace members and shared dependencies
+- `justfile`, `Makefile` — task runners (common in Rust projects)
 - `.editorconfig` — indent style, charset
 
 **Existing agent config:**
@@ -57,6 +63,8 @@ From what you discovered, determine:
 5. **Hard rules** — constraints from lint config, tsconfig strict settings, existing agent instructions
 6. **Verification sequence** — build, lint, test, typecheck commands from package.json scripts
 7. **Known gotchas** — non-standard ports, unusual directory structures, pinned dependency versions
+8. **Workspace awareness** — if Rust workspace detected, map workspace members and determine
+   if verification commands should use `--workspace` flag
 
 ## Phase 3: Populate
 

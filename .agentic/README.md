@@ -1,18 +1,18 @@
-# Agentic Coding Pipeline
+# Agentic Coding Pipeline v1.1
 
-A self-contained template for governed AI-assisted development with Google Antigravity.
+A self-contained template for governed, autonomous AI-assisted development with Google Antigravity.
 Copy this structure into any project workspace to get instant project intelligence,
 reusable commands, deterministic quality gates, and full-project orchestration.
 
 ## Philosophy
 
-Borrowed from the Akretic governance platform:
+> **Architecture requires human approval. Implementation proceeds autonomously inside approved boundaries.**
 
-> **Models may propose, never execute unchecked.**
-
-Every plan requires human approval. Every implementation runs through deterministic gates.
-Every result produces a verification report. If something fails, the agent escalates — it
-never silently swallows an error.
+The system is designed around a simple operating model: humans own the design decisions,
+the agent owns the execution. The `/architect` command is conversational and collaborative.
+Once architecture is approved, `/build` executes milestone-by-milestone without asking
+permission for every screwdriver turn. The agent stops only when it hits a genuine risk
+boundary — never for routine implementation steps.
 
 **Stay boring.** This system is optimized for retrieval and consistency, not cleverness.
 Concise blueprints, strict naming, predictable command behavior, identical verification
@@ -33,49 +33,93 @@ your-project/
     ├── context.md               # Context anchor: critical facts re-read before every file write
     │
     ├── commands/                # Reusable commands with defined inputs/outputs
-    │   ├── architect.toml       # Design a greenfield project through conversation
-    │   ├── orchestrate.toml     # Execute an epic ledger milestone-by-milestone
-    │   ├── verify.toml          # Run quality gates, produce verification report
+    │   ├── architect.toml       # Design a greenfield project through conversation (guided)
+    │   ├── build.toml           # Execute the approved milestone plan (autonomous)
+    │   ├── verify.toml          # Run quality gates (full or scoped), produce report
+    │   ├── repair.toml          # Fix localized bugs, cleanup, audit follow-up (autonomous)
+    │   ├── stabilize.toml       # Bring project to 100% passing state (autonomous)
     │   ├── scaffold-feature.toml # Scaffold a feature following project patterns
-    │   ├── audit.toml           # Read-only code quality audit
+    │   ├── audit.toml           # Read-only code quality audit (machine-parseable output)
     │   ├── debug.toml           # Structured reproduce → isolate → diagnose → fix
-    │   ├── reset.toml           # Emergency brake — snap agent back to governance
-    │   └── onboard.toml         # Auto-discover project and populate blueprint + context
+    │   ├── onboard.toml         # Auto-discover project and populate blueprint + context
+    │   ├── sync.toml            # ⚠️ EXPERIMENTAL — Pull framework files from canonical source
+    │   └── reset.toml           # Emergency brake — snap agent back to governance
     │
     ├── conventions/             # Language-specific coding standards
-    │   └── typescript.md        # (add python.md, rust.md as needed)
+    │   ├── typescript.md        # TypeScript/JavaScript conventions
+    │   └── rust.md              # Rust conventions
     │
     ├── governance/              # Quality gates, plan templates, escalation rules
     │   ├── quality-gates.md     # G1–G5 mandatory, G6–G10 conditional
     │   ├── plan-template.md     # Standard implementation plan format
-    │   ├── epic-template.md     # Master build plan for multi-milestone projects
+    │   ├── milestone-template.md # Master build plan for multi-milestone projects
     │   ├── verification-report.md # Rigid report template (same every time)
     │   └── escalation-protocol.md # 3-attempt retry ladder → escalate
     │
     └── architecture/            # (Created by /architect for greenfield projects)
         ├── design-doc.md        # System architecture, data models, API surface
-        └── epic-ledger.md       # Milestone-by-milestone execution plan
+        └── milestone-ledger.md  # Milestone-by-milestone execution plan
 ```
 
-## Two Workflows
+## Execution Modes
 
-### Incremental (Existing Projects)
-For tasks on established codebases — bug fixes, features, refactors.
+The pipeline operates in two modes:
 
-1. Agent reads `GEMINI.md` → `.agentic/blueprint.md` → `.agentic/context.md`
-2. Produces a plan → you approve → agent implements
-3. Quality gates run → verification report produced
-4. If gates fail → escalation protocol (3 retries max)
+| Mode | Behavior | Used By |
+|------|----------|---------|
+| **Guided** | Conversational, human-interactive, approval required before implementation | `/architect` |
+| **Autonomous** | Plan, implement, verify, continue — stops only on hard-stop triggers | `/build`, `/repair`, `/stabilize` |
 
-### Greenfield (New Projects)
-For building complete applications from a single high-level prompt.
+### Hard-Stop Triggers (Autonomous Mode)
 
-1. Run `/architect` — conversational design phase with clarifying questions
-2. Agent produces `.agentic/blueprint.md`, `design-doc.md`, `epic-ledger.md`
-3. You review and approve the architecture
-4. Run `/orchestrate` — agent executes milestone-by-milestone
-5. Pauses at `[CHECKPOINT]` milestones for human review
-6. Each milestone runs through quality gates independently
+In autonomous mode, the agent must stop and request approval when:
+
+- Architecture rules would change
+- A new subsystem or major boundary is introduced
+- Dependency installation or toolchain changes
+- Secrets, auth, permissions, or security-sensitive work
+- Database migrations or destructive data operations
+- Destructive file operations
+- Repeated gate failure triggers the escalation protocol
+- Explicit `[CHECKPOINT]` milestones
+
+## Workflow Recipes
+
+### Bootstrap a New Workspace
+
+```
+/onboard → /verify (full) → /stabilize if needed
+```
+
+### Small Bug / Cleanup / Maintenance
+
+```
+/repair → /verify (scoped)
+```
+
+### Diagnosis-First Workflow
+
+```
+/debug → optional apply=true → /verify (scoped)
+```
+
+### Scoped Feature Inside Existing Architecture
+
+```
+/scaffold-feature → /build
+```
+
+### Major Subsystem / New Architecture
+
+```
+/architect → human approval → /build
+```
+
+### Periodic Health Check / Release Prep
+
+```
+/audit → /repair (for repairable findings)
+```
 
 ## Context Anchoring
 

@@ -1,13 +1,13 @@
 [command]
 name = "audit"
-description = "Run a comprehensive code quality audit on this project."
+description = "Run a comprehensive code quality audit on this project. Produces machine-parseable findings consumable by /repair."
 
 [inputs]
 scope = { type = "string", required = false, default = "full", description = "'full' audits the entire project, or a relative directory path to audit a subset" }
 
 [outputs]
-report = { type = "audit-report", description = "Findings categorized by severity (critical, warning, info)" }
-action_items = { type = "list", description = "Prioritized list of recommended fixes" }
+report = { type = "audit-report", description = "Findings categorized by severity with structured, machine-parseable format" }
+action_items = { type = "list", description = "Prioritized list of recommended fixes with repairability flags" }
 
 [prompt]
 template = """
@@ -36,7 +36,28 @@ template = """
    - Missing input validation on API endpoints
    - Permissive CORS or missing auth guards
 
-5. Categorize findings: 🔴 Critical, 🟡 Warning, 🔵 Info
-6. Output a structured report with file locations and recommended fixes.
-7. Do NOT auto-fix — report only.
+5. Output findings in a structured format. Each finding must include:
+
+   | Field | Description |
+   |-------|-------------|
+   | `id` | Finding identifier (e.g., A001, A002) |
+   | `severity` | 🔴 critical / 🟡 warning / 🔵 info |
+   | `file` | Absolute file path |
+   | `line` | Line number or range (if applicable) |
+   | `category` | structural / type-safety / code-quality / security |
+   | `description` | What is wrong |
+   | `suggested_action` | How to fix it |
+   | `repairable` | yes / no — whether it can be fixed without architecture changes |
+
+6. Summarize findings by severity and category.
+7. Findings marked `repairable: yes` can be passed directly to `/repair` for autonomous resolution.
+8. Do NOT auto-fix — report only.
+
+## When to Use /audit
+- When explicitly requested by the user
+- Before releases
+- After major milestones
+- For periodic health checks
+
+Do NOT insert /audit into every normal implementation loop. /audit is a sensor, not a default step.
 """

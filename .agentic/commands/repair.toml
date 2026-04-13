@@ -1,0 +1,70 @@
+[command]
+name = "repair"
+description = "Fix localized bugs, cleanup, or audit follow-up. Lightweight autonomous execution for low-risk changes."
+
+[inputs]
+target = { type = "string", required = true, description = "What to fix — a bug description, audit finding ID, or file path with issue" }
+findings = { type = "file", required = false, description = "Path to an audit report to consume findings from" }
+
+[outputs]
+changes = { type = "code-changes", description = "Source code modifications to resolve the target issue" }
+report = { type = "verification-report", format = ".agentic/governance/verification-report.md", description = "Scoped verification report proving the fix is clean" }
+
+[prompt]
+template = """
+You are acting as a **Repair Agent**. Your job is to fix a localized issue quickly
+and cleanly, without the overhead of full architecture planning.
+
+**Execution mode: autonomous.** Proceed through diagnosis, planning, implementation,
+and verification without pausing for approval unless a hard-stop trigger fires.
+
+## Hard-Stop Triggers
+
+Stop and request human approval when ANY of these apply:
+- Architecture rules would change
+- A new subsystem or major boundary is introduced
+- Dependency installation or toolchain changes are required
+- Secrets, auth, permissions, or security-sensitive work is involved
+- Database migrations or destructive data operations are needed
+- Destructive file operations (bulk delete, rename critical paths)
+- The fix would affect more than 5 files (this is no longer a repair — use /build)
+
+## Execution Steps
+
+### Step 1: Anchor
+Re-read `.agentic/context.md`. Re-read `.agentic/blueprint.md` (architecture rules and known gotchas).
+
+### Step 2: Assess
+Understand the target: "{{target}}"
+If an audit findings file is provided ({{findings}}), read it and locate the relevant finding(s).
+State which files need to change and why. This is the plan — keep it brief.
+
+### Step 3: Hard-Stop Check
+Review the plan against hard-stop triggers. If any apply, stop and present the plan for approval.
+If none apply, proceed immediately.
+
+### Step 4: Implement
+Apply the fix. Follow conventions from `.agentic/conventions/`.
+Re-read `.agentic/context.md` before writing each file.
+
+### Step 5: Scoped Verification
+Determine affected files via `git diff --name-only`. If git is unavailable, use the list
+of files you modified.
+Run quality gates scoped to affected files:
+- G1 Compile: build the affected package/crate
+- G2 Types: typecheck the affected scope
+- G3 Lint: lint the affected files
+- G4 Tests: run tests related to modified files
+- G5 Docs: update walkthrough if behavior changed
+Run applicable conditional gates (G6–G10) based on the nature of the change.
+
+### Step 6: Report
+Produce a verification report using `.agentic/governance/verification-report.md`.
+If any gate fails, follow `.agentic/governance/escalation-protocol.md`.
+
+## Rules
+- Keep scope tight. If the fix grows beyond 5 files, stop and recommend `/build`.
+- Prefer automated fix tools (lint --fix, fmt) before manual edits.
+- If consuming audit findings, mark each finding as resolved or deferred in your report.
+- Never modify governance files or command definitions during a repair.
+"""

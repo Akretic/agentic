@@ -13,11 +13,11 @@ These gates run on every task, regardless of scope or risk.
 
 | ID | Gate | Check | Command |
 |----|------|-------|---------|
-| G1 | **Build** | Code compiles without errors | `pnpm build` / `cargo build` |
+| G1 | **Compile** | Code compiles/packages without errors | `pnpm build` / `cargo build` |
 | G2 | **Type Safety** | No type errors | `pnpm typecheck` / `cargo check` |
 | G3 | **Lint** | No lint violations introduced | `pnpm lint` / `cargo clippy` |
 | G4 | **Existing Tests** | All pre-existing tests still pass | `pnpm test` / `cargo test` |
-| G5 | **Documentation** | Changes summarized in walkthrough artifact | Artifact creation |
+| G5 | **Documentation** | Changes summarized; verification report or named walkthrough artifact file path recorded | Artifact path in report |
 
 ### Conditional Gates
 
@@ -25,11 +25,11 @@ These gates run only when the task matches their trigger condition.
 
 | ID | Gate | Trigger | Check | Command |
 |----|------|---------|-------|---------|
-| G6 | **New Tests** | Adding a feature or fixing a bug | New code has test coverage for the change | Manual verification |
+| G6 | **New Tests** | Adding a feature or fixing a bug | Test file path for new/modified tests recorded in report, OR explicit written waiver with justification | Test runner on new files |
 | G7 | **Visual Verification** | UI changes (components, pages, styles) | UI renders correctly, no layout breakage | Browser subagent |
-| G8 | **Security Scan** | Auth, API, secrets, or permission changes | No hardcoded secrets, safe auth patterns | `grep` scan for patterns |
+| G8 | **Security Scan** | Auth, API, secrets, or permission changes | Scan for: hardcoded secrets (`password\s*=\s*['"]`), API keys in source, `.env` values in code, missing auth guards on route handlers, permissive CORS (`origin: '*'`). Checklist in report required. | `grep` / `ripgrep` scan |
 | G9 | **Migration Safety** | Database schema changes | Migration runs cleanly, rollback is possible | `prisma migrate dev` + review |
-| G10 | **Performance** | Changes to queries, loops, or data-heavy paths | No obvious N+1 queries or unbounded loops | Manual review |
+| G10 | **Performance** | Changes to queries, loops, or data-heavy paths | Written performance note required: what was reviewed, N+1 queries checked, unbounded loops checked, verdict | Note in report |
 
 ---
 

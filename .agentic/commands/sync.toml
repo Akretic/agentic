@@ -1,6 +1,6 @@
 [command]
 name = "sync"
-description = "Pull the latest framework files from the canonical agentic repo without overwriting project-specific files."
+description = "⚠️ EXPERIMENTAL — Pull the latest framework files from the canonical agentic repo without overwriting project-specific files. This command describes the intended sync behavior but relies on agent improvisation for file comparison. No automated sync tooling (git subtree, release tags, diffing script) is currently plumbed. For reliable updates, use a local source path."
 
 [inputs]
 source = { type = "string", required = false, default = "upstream", description = "'upstream' pulls from the GitHub repo, or an absolute path to a local agentic directory" }
@@ -28,7 +28,7 @@ These contain project-customized data and must be preserved:
 - `GEMINI.md` — customized agent instructions
 - `.agentic/blueprint.md` — project identity (populated by /onboard)
 - `.agentic/context.md` — project-specific critical constants
-- `.agentic/architecture/*` — project-specific design docs and epic ledger
+- `.agentic/architecture/*` — project-specific design docs and milestone ledger
 
 ## Sync Procedure
 

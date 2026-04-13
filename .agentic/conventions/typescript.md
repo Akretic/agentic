@@ -1,6 +1,6 @@
 # TypeScript Conventions
 
-> Applies to all TypeScript/JavaScript projects (NCA, Family Ties, future TS projects).
+> Applies to all TypeScript/JavaScript projects managed by this pipeline.
 
 ---
 
@@ -10,7 +10,7 @@ Order imports in this sequence, separated by blank lines:
 
 1. Node/framework imports (`react`, `next`, `@nestjs/*`)
 2. Third-party libraries (`@tanstack/react-query`, `zod`, `axios`)
-3. Internal packages (`@shared/*`)
+3. Internal packages (workspace imports, shared libraries)
 4. Local imports (`@/lib/*`, `@/components/*`)
 5. Type-only imports (`import type { ... }`)
 
@@ -18,7 +18,7 @@ Order imports in this sequence, separated by blank lines:
 import { Controller, Get } from '@nestjs/common';
 import { useQuery } from '@tanstack/react-query';
 
-import type { Project } from '@shared/domain/domain';
+import type { Project } from '@internal/domain';
 
 import { apiClient } from '@/lib/api';
 import { logger } from '@/lib/logger';
@@ -73,8 +73,8 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
 ## API Patterns
 
-- **Backend (NestJS):** controller handles HTTP, service handles logic, Prisma handles data.
-- **Frontend:** use React Query for all data fetching. No raw `fetch` or `axios` calls.
+- **Backend (NestJS/Express/Fastify, if applicable):** controller handles HTTP, service handles logic, ORM handles data.
+- **Frontend:** use React Query (or project-specific data layer) for all data fetching. No raw `fetch` or `axios` calls.
 - **Mutations:** always invalidate related queries on success.
 - **Paginated responses:** API client handles `{ data, meta }` extraction automatically.
 
@@ -89,7 +89,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
 | Constants | UPPER_SNAKE | `MAX_FILE_SIZE` |
 | Types/Interfaces | PascalCase | `ProjectStatus` |
 | Enums | PascalCase members | `Status.Active` |
-| CSS classes | Tailwind utilities | — |
+| CSS classes | Per-project convention (Tailwind, CSS Modules, vanilla CSS, etc.) | — |
 
 ## Testing
 

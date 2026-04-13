@@ -1,6 +1,6 @@
 [command]
 name = "scaffold-feature"
-description = "Scaffold a new feature for this project following its architecture rules."
+description = "Scaffold a new feature for this project following its architecture rules. Proceeds autonomously if the feature fits the approved architecture."
 
 [inputs]
 feature = { type = "string", required = true, description = "Name of the feature to scaffold (e.g., 'invoices', 'site-plans')" }
@@ -21,7 +21,14 @@ template = """
    - Create all necessary files (controllers, services, models, pages, types, test stubs).
    - Register the feature in the project's appropriate entry points.
 
-5. Output an implementation plan FIRST using `.agentic/governance/plan-template.md`.
-6. Wait for approval before creating any files.
-7. After implementation, run `/verify`.
+5. Output an implementation plan using `.agentic/governance/plan-template.md`.
+
+6. **Autonomy check:**
+   - If the feature clearly fits the approved architecture AND no hard-stop triggers apply
+     (no new subsystem boundaries, no dependency installations, no auth/permissions changes,
+     no schema migrations): proceed to implementation automatically.
+   - If the feature requires boundary changes, introduces unresolved design questions, or
+     hits any hard-stop trigger: stop and present the plan for approval.
+
+7. After implementation, run scoped verification via `/verify`.
 """
