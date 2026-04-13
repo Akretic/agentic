@@ -27,8 +27,12 @@ Ask the user focused, clarifying questions. Cover these areas:
 5. **Deployment target** — Where does this run? Docker? Cloud? Self-hosted?
 6. **Scope boundaries** — What is explicitly NOT in v1?
 
-Do NOT proceed until you have clear answers. Ask follow-ups if answers are vague.
-Limit yourself to 2-4 questions per round to keep the conversation focused.
+CRITICAL RULES FOR DISCOVERY:
+- Limit yourself to asking 2-4 questions per round. Wait for the user to respond.
+- When the user responds, EVALUATE their answers. If their answers are brief or incomplete, YOU MUST NOT PROCEED TO PHASE 2. Instead, ask follow-up questions.
+- If the user asks YOU a question (e.g., asking for a recommendation), YOU MUST answer it and get their agreement before moving to Phase 2.
+- Keep iterating in Phase 1 until you have zero remaining ambiguities. Do NOT rush to Phase 2.
+
 
 ## Phase 2: Design (After Discovery)
 
